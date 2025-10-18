@@ -1,0 +1,12 @@
+maxCandidates: 5
+maxPerCategory: 2
+comment:
+  maxChars: 38
+image:
+  width: 1200
+  height: 675
+  footer: "@news-to-x"
+filters:
+  blockDomains: []
+  blockWords: []
+usePublisherImage: false

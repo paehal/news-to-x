@@ -1,0 +1,89 @@
+/**
+ * 共通型定義。
+ */
+export type CandidateStatus = 'pending' | 'posted' | 'skipped';
+
+export interface FeedSource {
+  title: string;
+  url: string;
+  category: string;
+  language?: string;
+}
+
+export interface Article {
+  id: string;
+  title: string;
+  link: string;
+  isoDate?: string;
+  contentSnippet?: string;
+  feedTitle: string;
+  category: string;
+}
+
+export interface OgMetadata {
+  title?: string;
+  image?: string;
+  url?: string;
+}
+
+export interface CandidateMetadata {
+  id: number;
+  feedTitle: string;
+  articleTitle: string;
+  url: string;
+  category: string;
+  comment: string;
+  imageBase64: string;
+  imageAlt: string;
+  ogTitle?: string;
+  status: CandidateStatus;
+  postedAt?: string;
+  tweetId?: string;
+  rejectionReason?: string;
+}
+
+export interface IssueMetadata {
+  issueNumber: number | null;
+  generatedAt: string;
+  timezone: string;
+  candidates: CandidateMetadata[];
+}
+
+export interface PostedEntry {
+  urlHash: string;
+  url: string;
+  postedAt: string;
+  issueNumber: number | null;
+  tweetId?: string;
+}
+
+export interface CommentConfig {
+  maxChars: number;
+}
+
+export interface ImageConfig {
+  width: number;
+  height: number;
+  footer: string;
+}
+
+export interface FilterConfig {
+  blockDomains: string[];
+  blockWords: string[];
+}
+
+export interface AppConfig {
+  maxCandidates: number;
+  maxPerCategory: number;
+  comment: CommentConfig;
+  image: ImageConfig;
+  filters: FilterConfig;
+  usePublisherImage: boolean;
+}
+
+export interface GeneratedCard {
+  filePath: string;
+  base64: string;
+  alt: string;
+  hash: string;
+}

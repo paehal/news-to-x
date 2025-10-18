@@ -1,0 +1,35 @@
+{
+  "name": "news-to-x",
+  "version": "1.0.0",
+  "description": "ニュースRSS→OpenAIコメント→画像→X投稿の自動化ワークフロー",
+  "type": "module",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "collect": "npm run build && node dist/cli/collect.js",
+    "post": "npm run build && node dist/cli/post.js",
+    "init:x": "npm run build && node dist/scripts/init-x-refresh-token.js",
+    "lint": "eslint \"src/**/*.ts\" \"scripts/**/*.ts\""
+  },
+  "dependencies": {
+    "metascraper": "^5.44.0",
+    "metascraper-image": "^5.44.0",
+    "metascraper-title": "^5.44.0",
+    "oauth-1.0a": "^2.2.6",
+    "openai": "^4.57.0",
+    "rss-parser": "^3.13.0",
+    "sharp": "^0.33.2",
+    "undici": "^6.13.0",
+    "yaml": "^2.4.2",
+    "zod": "^3.22.4"
+  },
+  "devDependencies": {
+    "@types/node": "^20.12.7",
+    "@typescript-eslint/eslint-plugin": "^7.8.0",
+    "@typescript-eslint/parser": "^7.8.0",
+    "eslint": "^8.56.0",
+    "typescript": "^5.4.5"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  }
+}
