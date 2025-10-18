@@ -1,9 +1,21 @@
+import { z } from 'zod';
 import { IssueMetadata } from '../types.js';
 import { createLogger } from '../utils/logger.js';
 import { fetchWithTimeout } from '../utils/fetch.js';
 
 const logger = createLogger('gh-issue');
 const METADATA_TAG = 'autopost:metadata';
+
+const IssueCreateResponse = z.object({
+  number: z.number(),
+  html_url: z.string().url(),
+});
+
+const IssueGetResponse = z.object({
+  number: z.number(),
+  html_url: z.string().url(),
+  body: z.string().optional(),
+});
 
 export const formatIssueTitle = (date: Date): string => {
   const formatter = new Intl.DateTimeFormat('ja-JP', {
@@ -93,10 +105,11 @@ export const createProposalIssue = async (
       labels: ['news-proposal'],
     }),
   });
-  const data = await response.json();
+  const json = await response.json();
   if (!response.ok) {
-    throw new Error(`Issue 作成に失敗しました: ${JSON.stringify(data)}`);
+    throw new Error(`Issue 作成に失敗しました: ${JSON.stringify(json)}`);
   }
+  const data = IssueCreateResponse.parse(json);
   return { number: data.number, html_url: data.html_url };
 };
 
@@ -151,10 +164,11 @@ export const fetchIssue = async (
   const response = await fetchWithTimeout(`https://api.github.com/repos/${owner}/${repo}/issues/${issueNumber}`, {
     headers: githubHeaders(token),
   });
-  const data = await response.json();
+  const json = await response.json();
   if (!response.ok) {
-    throw new Error(`Issue 取得に失敗しました: ${JSON.stringify(data)}`);
+    throw new Error(`Issue 取得に失敗しました: ${JSON.stringify(json)}`);
   }
+  const data = IssueGetResponse.parse(json);
   return { body: data.body ?? '', number: data.number, html_url: data.html_url };
 };
 

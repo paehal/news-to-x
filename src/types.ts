@@ -1,7 +1,7 @@
 /**
  * 共通型定義。
  */
-export type CandidateStatus = 'pending' | 'posted' | 'skipped';
+export type CandidateStatus = 'proposed' | 'posted' | 'skipped';
 
 export interface FeedSource {
   title: string;

@@ -10,7 +10,7 @@ import { ensureNewsProposalLabel } from '../gh/labels.js';
 import { createProposalIssue, updateProposalIssue, renderIssueBody, formatIssueTitle } from '../gh/issue.js';
 import { loadPostedLog } from '../gh/git.js';
 import { containsBlockedWord } from '../utils/text.js';
-import { IssueMetadata } from '../types.js';
+import { CandidateMetadata, IssueMetadata } from '../types.js';
 
 const logger = createLogger('collect');
 
@@ -35,7 +35,7 @@ const main = async () => {
   const outDir = path.resolve(process.cwd(), 'out');
   await fs.mkdir(outDir, { recursive: true });
 
-  const candidates = [];
+  const candidates: CandidateMetadata[] = [];
   for (const article of articles) {
     const blocked = containsBlockedWord(`${article.title} ${article.contentSnippet ?? ''}`, config.filters.blockWords);
     if (blocked) {
@@ -67,7 +67,7 @@ const main = async () => {
         imageBase64: card.base64,
         imageAlt: card.alt,
         ogTitle: og?.title,
-        status: 'pending',
+        status: 'proposed',
       });
       logger.info(`候補 ${candidates.length} を追加: ${article.title}`);
     } catch (error) {

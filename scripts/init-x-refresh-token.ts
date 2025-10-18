@@ -1,11 +1,20 @@
 import http from 'http';
 import crypto from 'crypto';
+import { z } from 'zod';
 import { fetchWithTimeout } from '../src/utils/fetch.js';
 import { createLogger } from '../src/utils/logger.js';
 
 const logger = createLogger('init-x');
 const redirectUri = 'http://127.0.0.1:3000/callback';
 const scopes = ['tweet.read', 'tweet.write', 'users.read', 'offline.access'];
+
+const TokenResponse = z.object({
+  token_type: z.string(),
+  access_token: z.string(),
+  refresh_token: z.string(),
+  expires_in: z.number(),
+  scope: z.string().optional(),
+});
 
 const base64url = (buffer: Buffer) =>
   buffer
@@ -67,20 +76,23 @@ const server = http.createServer(async (req, res) => {
         client_id: clientId,
       }).toString(),
     });
-    const tokenJson = await tokenRes.json();
+    const rawJson = await tokenRes.json();
     if (!tokenRes.ok) {
-      logger.error(`トークン取得に失敗しました: ${JSON.stringify(tokenJson)}`);
-      res.writeHead(500).end('Failed to obtain token');
+      logger.error(`トークン取得に失敗しました: ${JSON.stringify(rawJson)}`);
+      res.writeHead(500, { 'Content-Type': 'text/plain; charset=utf-8' }).end('Failed to obtain token');
       server.close();
       return;
     }
-    logger.info('access_token: ' + tokenJson.access_token);
-    logger.info('refresh_token: ' + tokenJson.refresh_token);
-    logger.info('expires_in: ' + tokenJson.expires_in);
-    res.writeHead(200).end('取得成功。このターミナルを確認してください。');
+    const tokenJson = TokenResponse.parse(rawJson);
+    logger.info(`access_token: ${tokenJson.access_token}`);
+    logger.info(`refresh_token: ${tokenJson.refresh_token}`);
+    logger.info(`expires_in: ${tokenJson.expires_in}`);
+    res.writeHead(200, { 'Content-Type': 'text/plain; charset=utf-8' }).end(
+      'OK 認可コードを受け取りました。ターミナルを確認してください。',
+    );
   } catch (error) {
     logger.error('トークン取得中にエラーが発生しました', error);
-    res.writeHead(500).end('Error');
+    res.writeHead(500, { 'Content-Type': 'text/plain; charset=utf-8' }).end('Error');
   } finally {
     server.close();
   }
