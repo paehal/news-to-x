@@ -45,7 +45,7 @@ jobs:
           mkdir -p cards/${{ github.run_id }}
           shopt -s nullglob
           for file in out/*.png; do
-            cp "$file" "cards/${{ github.run_id }}/$(basename "$file")"
+            mv "$file" "cards/${{ github.run_id }}/$(basename "$file")"
           done
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git config user.name "github-actions[bot]"

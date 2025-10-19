@@ -3,7 +3,7 @@ import path from 'path';
 import sharp from 'sharp';
 import { AppConfig, GeneratedCard } from '../types.js';
 import { createLogger } from '../utils/logger.js';
-import { normalizeWhitespace, wrapJapaneseText, clipByLength, toSafeFileName } from '../utils/text.js';
+import { normalizeWhitespace, wrapJapaneseText, clipByLength } from '../utils/text.js';
 import { hashBuffer } from '../utils/hash.js';
 import { fetchWithTimeout } from '../utils/fetch.js';
 
@@ -114,7 +114,7 @@ export const generateCardImage = async (options: CardOptions): Promise<Generated
   layers.push({ input: svg, blend: 'over' });
 
   const composed = await background.composite(layers).png({ quality: 90 }).toBuffer();
-  const fileName = `candidate-${String(index).padStart(2, '0')}-${toSafeFileName(publisher)}.png`;
+  const fileName = `${index}.png`;
   const filePath = path.join(outputDir, fileName);
   await fs.writeFile(filePath, composed);
 

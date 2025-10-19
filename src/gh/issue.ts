@@ -41,15 +41,16 @@ const resolveBranch = (): string | null => {
   return null;
 };
 
-const buildImageMarkdown = (metadata: IssueMetadata, candidate: IssueMetadata['candidates'][number], index: number): string[] => {
+const buildImageMarkdown = (metadata: IssueMetadata, index: number): string[] => {
   const runId = metadata.runId;
   const ownerRepo = process.env.GITHUB_REPOSITORY;
-  const branch = resolveBranch();
-  if (!runId || !ownerRepo || !branch || !candidate.imageFileName) {
+  const branch = resolveBranch() ?? 'main';
+  if (!runId || !ownerRepo) {
     return [];
   }
   const base = `https://raw.githubusercontent.com/${ownerRepo}/${branch}`;
-  const imagePath = `cards/${runId}/${candidate.imageFileName}`;
+  const fileName = `${index + 1}.png`;
+  const imagePath = `cards/${runId}/${fileName}`;
   const url = `${base}/${imagePath}`;
   return [
     `![カード ${index + 1}](${url})`,
@@ -68,7 +69,7 @@ const buildCompactBody = (metadata: IssueMetadata): string => {
       candidate.articleTitle,
       `[記事リンク](${candidate.url})`,
     ];
-    lines.push(...buildImageMarkdown(metadata, candidate, index));
+    lines.push(...buildImageMarkdown(metadata, index));
     if (candidate.tweetId) {
       lines.push(`投稿URL: https://x.com/i/web/status/${candidate.tweetId}`);
     }
