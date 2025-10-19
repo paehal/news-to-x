@@ -30,32 +30,29 @@ export const formatIssueTitle = (date: Date): string => {
   return `AutoPost 提案 ${formatted}`;
 };
 
-export const renderIssueBody = (metadata: IssueMetadata): string => {
-  const lines: string[] = [];
-  lines.push(`## 候補一覧 (${metadata.generatedAt})`);
-  lines.push('');
-  lines.push('approve: 1,3 のようにコメントすると該当番号を投稿します。');
-  lines.push('');
-  for (const candidate of metadata.candidates) {
-    const checkbox = candidate.status === 'posted' ? 'x' : ' ';
-    lines.push(`- [${checkbox}] ${candidate.id}. ${candidate.feedTitle}｜${candidate.articleTitle}`);
-    lines.push(`  - カテゴリ: ${candidate.category}`);
-    lines.push(`  - コメント: ${candidate.comment}`);
-    lines.push(`  - リンク: ${candidate.url}`);
+const buildCompactBody = (metadata: IssueMetadata): string => {
+  const header = ['# AutoPost 候補', 'コメントで `approve: 1,3` のように番号を指定してください。'];
+  const sections = metadata.candidates.map((candidate, index) => {
+    const lines = [
+      `## 候補 ${index + 1}`,
+      `媒体: ${candidate.feedTitle}`,
+      `カテゴリ: ${candidate.category}`,
+      `コメント: **${candidate.comment}**`,
+      candidate.articleTitle,
+      `[記事リンク](${candidate.url})`,
+    ];
     if (candidate.tweetId) {
-      lines.push(`  - 投稿URL: https://x.com/i/web/status/${candidate.tweetId}`);
+      lines.push(`投稿URL: https://x.com/i/web/status/${candidate.tweetId}`);
     }
     if (candidate.rejectionReason) {
-      lines.push(`  - SKIP理由: ${candidate.rejectionReason}`);
+      lines.push(`SKIP理由: ${candidate.rejectionReason}`);
     }
-    lines.push(`  - 画像: ![候補${candidate.id}](data:image/png;base64,${candidate.imageBase64})`);
-    lines.push('');
-  }
-  lines.push(`<!-- ${METADATA_TAG}`);
-  lines.push(JSON.stringify(metadata));
-  lines.push('-->');
-  return lines.join('\n');
+    return lines.join('\n');
+  });
+  return [...header, ...sections, `<!-- ${METADATA_TAG}\n${JSON.stringify(metadata)}\n-->`].join('\n\n');
 };
+
+export const renderIssueBody = (metadata: IssueMetadata): string => buildCompactBody(metadata);
 
 export const extractMetadataFromBody = (body?: string | null): IssueMetadata | null => {
   if (!body) {
