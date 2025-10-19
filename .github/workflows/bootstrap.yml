@@ -1,64 +1,59 @@
-name: Bootstrap AutoPost
+name: Bootstrap
 
 on:
   workflow_dispatch:
 
-concurrency:
-  group: autopost-${{ github.ref }}
-  cancel-in-progress: true
-
 permissions:
-  contents: read
+  contents: write
   issues: write
+
+concurrency:
+  group: bootstrap-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   bootstrap:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
           cache: 'npm'
+
       - name: Install dependencies
         run: npm ci
+
       - name: Build
         run: npm run build
+
       - name: Validate secrets
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           X_CLIENT_ID: ${{ secrets.X_CLIENT_ID }}
           X_CLIENT_SECRET: ${{ secrets.X_CLIENT_SECRET }}
         run: |
-          node - <<'NODE'
-          const required = ['OPENAI_API_KEY', 'X_CLIENT_ID', 'X_CLIENT_SECRET'];
-          const missing = required.filter((key) => !process.env[key]);
-          if (missing.length) {
-            console.error('未設定の Secrets:', missing.join(', '));
-            process.exit(1);
-          }
-          console.log('Secrets チェック OK');
-NODE
-      - name: Ensure news-proposal label
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          node - <<'NODE'
-          import { pathToFileURL } from 'url';
-          import path from 'path';
+          node -e "const req=['OPENAI_API_KEY','X_CLIENT_ID','X_CLIENT_SECRET'];const miss=req.filter(k=>!process.env[k]);if(miss.length){console.error('Missing secrets:',miss.join(', '));process.exit(1)}console.log('Secrets OK')"
 
-          (async () => {
-            const repo = process.env.GITHUB_REPOSITORY;
-            if (!repo) {
-              throw new Error('GITHUB_REPOSITORY が未定義です');
+      - name: Ensure news-proposal label
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ github.token }}
+          script: |
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+            const name = 'news-proposal';
+            const color = '666666';
+            const description = 'Auto-generated news suggestions';
+            try {
+              await github.rest.issues.getLabel({ owner, repo, name });
+              core.info('Label already exists');
+            } catch (e) {
+              if (e.status === 404) {
+                await github.rest.issues.createLabel({ owner, repo, name, color, description });
+                core.info('Label created');
+              } else {
+                throw e;
+              }
             }
-            const [owner, name] = repo.split('/');
-            const moduleUrl = pathToFileURL(path.resolve('dist/gh/labels.js')).href;
-            const { ensureNewsProposalLabel } = await import(moduleUrl);
-            await ensureNewsProposalLabel(owner, name, process.env.GITHUB_TOKEN);
-            console.log('ラベル確認完了');
-          })().catch((error) => {
-            console.error(error);
-            process.exit(1);
-          });
-NODE
