@@ -63,10 +63,34 @@ export interface CommentConfig {
   maxChars: number;
 }
 
+export type ImageMode = 'publisher_overlay' | 'safe';
+
+export interface ImageOverlayConfig {
+  darken: number;
+  padding: number;
+  maxLines: number;
+  fontFamily: string;
+  fontWeight: number;
+  stroke: boolean;
+  dropShadow: boolean;
+}
+
+export interface ImageLicenseConfig {
+  allowDomains: string[];
+  blockDomains: string[];
+  minSize: {
+    width: number;
+    height: number;
+  };
+}
+
 export interface ImageConfig {
+  mode: ImageMode;
   width: number;
   height: number;
   footer: string;
+  overlay: ImageOverlayConfig;
+  license: ImageLicenseConfig;
 }
 
 export interface FilterConfig {
@@ -80,7 +104,6 @@ export interface AppConfig {
   comment: CommentConfig;
   image: ImageConfig;
   filters: FilterConfig;
-  usePublisherImage: boolean;
 }
 
 export interface GeneratedCard {

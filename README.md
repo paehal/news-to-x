@@ -6,8 +6,8 @@
 
 1. `feeds.json` に定義した日本のニュース RSS から最新記事を取得します。
 2. metascraper で OGP メタデータを抽出し、記事タイトル等を整理します。
-3. OpenAI Responses API で 38 文字以内の安全な短文コメントを生成し、omni-moderation でチェックします。
-4. sharp で Noto CJK フォントを使ったカード画像を合成（デフォルトは自前背景）。
+3. OpenAI Responses API で安全な短文コメント（最大文字数は `config.yml` で調整可能）を生成し、omni-moderation でチェックします。
+4. OGP 画像をライセンスホワイトリストに基づいて取得し、暗幕＋太字テキストを重ねたカードを sharp で合成（条件を満たさない場合は安全カードにフォールバック）。
 5. 生成候補を GitHub Issue に画像付きで一覧化。`approve: 1,3` のようなコメントで承認。
 6. 承認番号を検出すると X API に画像付きポスト。投稿済み URL は `data/posted.json` で管理し、GitHub Actions がコミットします。
 7. X の Refresh Token は毎回更新し、GH_PAT があれば Secrets も自動更新します。
@@ -61,11 +61,13 @@
 | `maxCandidates` | 1 回の候補数上限 |
 | `maxPerCategory` | カテゴリごとの最大件数 |
 | `comment.maxChars` | コメント文字数上限（OpenAI 出力後にも丸め） |
+| `image.mode` | `publisher_overlay`（OG画像にテキストを重ねる） / `safe`（無地カード） |
 | `image.width/height` | カード画像サイズ |
 | `image.footer` | 画像右下に描画するテキスト |
+| `image.overlay.*` | オーバーレイの暗幕・余白・フォント設定 |
+| `image.license.*` | OG画像の許可ドメインや最小サイズなどの安全設定 |
 | `filters.blockDomains` | 投稿除外ドメイン（`example.com` など） |
 | `filters.blockWords` | タイトル/概要に含まれると除外する語句 |
-| `usePublisherImage` | `true` で OGP 画像を背景にぼかして使用（安全デフォルトは false） |
 
 ## Secrets / 環境変数
 
@@ -115,13 +117,13 @@
 ## トラブルシューティング
 
 - **OpenAI API エラー**: `OPENAI_API_KEY` の権限やモデル指定を再確認。レート制限時はローカルで `npm run collect` を再実行。
-- **OGP 画像が生成されない**: `usePublisherImage` を false のままでも自前背景で動作します。外部画像がブロックされる場合はログを確認。
+- **OG 画像が使われない**: `image.license.allowDomains` に含まれていない場合や、サイズ判定に落ちた場合は安全カードが生成されます。ログにフォールバック理由が出力されるので確認してください。
 - **X 投稿失敗**: `X_REFRESH_TOKEN` の有効期限切れ、メディアサイズ超過、テキストのポリシー違反が考えられます。ログ出力を確認してください。
 - **GitHub Secrets 更新失敗**: `GH_PAT` に `repo` 権限があるか、Actions ランナーで `gh` CLI が利用可能かを確認。
 
 ## セキュリティ・著作権への配慮
 
-- 外部 OGP 画像を利用しない（デフォルト false）ことで画像利用リスクを低減しています。利用する場合は各媒体の利用規約をご確認ください。
+- OGP 画像を使う場合でも `image.license.allowDomains` によるホワイトリストと最小サイズ判定で安全側にフォールバックします。利用する際は各媒体の利用規約を確認してください。
 - コメント生成はモデレーション済みとはいえ、最終確認者が Issue 上で内容をチェックすることを前提に設計しています。
 - 投稿履歴はリポジトリに記録されるため、公開リポジトリの場合は個人情報や非公開記事を扱わないでください。
 - OpenAI, Twitter/X API の利用規約・料金プランに従って運用してください。

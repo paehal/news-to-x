@@ -3,10 +3,33 @@ maxPerCategory: 2
 comment:
   maxChars: 100
 image:
+  mode: publisher_overlay
   width: 1200
   height: 675
   footer: "@news-to-x"
+  overlay:
+    darken: 0.35
+    padding: 56
+    maxLines: 3
+    fontFamily: "Noto Sans CJK JP"
+    fontWeight: 900
+    stroke: true
+    dropShadow: true
+  license:
+    allowDomains:
+      - "www3.nhk.or.jp"
+      - "news.yahoo.co.jp"
+      - "mainichi.jp"
+      - "natalie.mu"
+      - "gigazine.net"
+      - "www.watch.impress.co.jp"
+      - "www.nikkansports.com"
+      - "www.sponichi.co.jp"
+      - "hochi.news"
+    blockDomains: []
+    minSize:
+      width: 640
+      height: 360
 filters:
   blockDomains: []
   blockWords: []
-usePublisherImage: false

@@ -3,9 +3,9 @@ import path from 'path';
 import { createLogger } from '../utils/logger.js';
 import { loadConfig } from '../utils/config.js';
 import { loadFeedSources, fetchLatestArticles } from '../news/fetchFeeds.js';
-import { extractOgMetadata } from '../news/extractOg.js';
+import { extractOgMetadata, resolvePublisherImage } from '../news/extractOg.js';
 import { generateComment } from '../nlp/comment.js';
-import { generateCardImage } from '../image/makeCard.js';
+import { generateSafeCard, makePublisherOverlayCard } from '../image/makeCard.js';
 import { ensureNewsProposalLabel } from '../gh/labels.js';
 import { createProposalIssue, updateProposalIssue, renderIssueBody, formatIssueTitle } from '../gh/issue.js';
 import { loadPostedLog } from '../gh/git.js';
@@ -47,7 +47,17 @@ const main = async () => {
     try {
       const og = await extractOgMetadata(article.link);
       const comment = await generateComment(article, config, og?.title);
-      const card = await generateCardImage({
+
+      const publisherImage = await resolvePublisherImage(
+        article.link,
+        og?.image ?? null,
+        config.image.license,
+      ).catch((error) => {
+        logger.warn('OG 画像の解析に失敗したためフォールバックします', error);
+        return null;
+      });
+
+      let card = await generateSafeCard({
         index: candidates.length + 1,
         articleTitle: article.title,
         publisher: article.feedTitle,
@@ -55,8 +65,26 @@ const main = async () => {
         link: article.link,
         outputDir: outDir,
         config,
-        ogImageUrl: config.usePublisherImage ? og?.image : undefined,
       });
+
+      if (config.image.mode === 'publisher_overlay' && publisherImage) {
+        try {
+          card = await makePublisherOverlayCard({
+            index: candidates.length + 1,
+            comment,
+            articleTitle: article.title,
+            publisher: article.feedTitle,
+            footer: config.image.footer,
+            outputDir: outDir,
+            width: config.image.width,
+            height: config.image.height,
+            overlay: config.image.overlay,
+            imageBuffer: publisherImage.buffer,
+          });
+        } catch (error) {
+          logger.warn('publisher overlay failed, fallback to safe card', error);
+        }
+      }
 
       candidates.push({
         id: candidates.length + 1,

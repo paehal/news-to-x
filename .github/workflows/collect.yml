@@ -44,7 +44,7 @@ jobs:
           if [ ! -d out ]; then exit 0; fi
           mkdir -p cards/${{ github.run_id }}
           shopt -s nullglob
-          for file in out/*.png; do
+          for file in out/*.png out/*.jpg out/*.jpeg; do
             mv "$file" "cards/${{ github.run_id }}/$(basename "$file")"
           done
           git config user.email "github-actions[bot]@users.noreply.github.com"

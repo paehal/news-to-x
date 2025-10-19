@@ -47,15 +47,16 @@ const buildIssueBody = (metadata: IssueMetadata): string => {
   const branch = resolveBranch() ?? 'main';
   const runId = metadata.runId ?? process.env.GITHUB_RUN_ID ?? 'local';
 
-  const imgUrl = (index: number) => `${server}/${repo}/blob/${branch}/cards/${runId}/${index}.png?raw=1`;
+  const imgUrl = (fileName: string) => `${server}/${repo}/blob/${branch}/cards/${runId}/${fileName}?raw=1`;
 
   const header = ['# AutoPost 候補', 'コメントで `approve: 1,3` のように番号を指定してください。'];
   const sections = metadata.candidates.map((candidate, index) => {
+    const imageFile = candidate.imageFileName ?? `${index + 1}.jpg`;
     const headLines = [
       `## 候補 ${index + 1}`,
       `**${candidate.comment}**`,
       candidate.articleTitle,
-      `![カード ${index + 1}](${imgUrl(index + 1)})`,
+      `![カード ${index + 1}](${imgUrl(imageFile)})`,
       `[記事リンク](${candidate.url})`,
     ];
 
