@@ -120,6 +120,7 @@ export const generateCardImage = async (options: CardOptions): Promise<Generated
 
   return {
     filePath,
+    fileName,
     base64: composed.toString('base64'),
     alt: `${publisher} ${articleTitle}`.slice(0, 420),
     hash: hashBuffer(composed),

@@ -35,10 +35,30 @@ jobs:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           GITHUB_TOKEN: ${{ github.token }}
         run: node dist/src/cli/collect.js
+
+      - name: Commit cards to repo
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          set -e
+          if [ ! -d out ]; then exit 0; fi
+          mkdir -p cards/${{ github.run_id }}
+          shopt -s nullglob
+          for file in out/*.png; do
+            cp "$file" "cards/${{ github.run_id }}/$(basename "$file")"
+          done
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git config user.name "github-actions[bot]"
+          git add cards/${{ github.run_id }}/ || true
+          if ! git diff --cached --quiet; then
+            git commit -m "cards: add for run ${{ github.run_id }}"
+            git push
+          fi
+
       - name: Upload cards
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: cards
-          path: out/
+          path: cards/${{ github.run_id }}/
           if-no-files-found: warn

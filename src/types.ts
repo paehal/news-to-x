@@ -35,6 +35,7 @@ export interface CandidateMetadata {
   comment: string;
   imageBase64: string;
   imageAlt: string;
+  imageFileName?: string;
   ogTitle?: string;
   status: CandidateStatus;
   postedAt?: string;
@@ -47,6 +48,7 @@ export interface IssueMetadata {
   generatedAt: string;
   timezone: string;
   candidates: CandidateMetadata[];
+  runId?: string | null;
 }
 
 export interface PostedEntry {
@@ -83,6 +85,7 @@ export interface AppConfig {
 
 export interface GeneratedCard {
   filePath: string;
+  fileName: string;
   base64: string;
   alt: string;
   hash: string;

@@ -30,6 +30,33 @@ export const formatIssueTitle = (date: Date): string => {
   return `AutoPost 提案 ${formatted}`;
 };
 
+const resolveBranch = (): string | null => {
+  if (process.env.GITHUB_REF_NAME) {
+    return process.env.GITHUB_REF_NAME;
+  }
+  const ref = process.env.GITHUB_REF;
+  if (ref?.startsWith('refs/heads/')) {
+    return ref.replace('refs/heads/', '');
+  }
+  return null;
+};
+
+const buildImageMarkdown = (metadata: IssueMetadata, candidate: IssueMetadata['candidates'][number], index: number): string[] => {
+  const runId = metadata.runId;
+  const ownerRepo = process.env.GITHUB_REPOSITORY;
+  const branch = resolveBranch();
+  if (!runId || !ownerRepo || !branch || !candidate.imageFileName) {
+    return [];
+  }
+  const base = `https://raw.githubusercontent.com/${ownerRepo}/${branch}`;
+  const imagePath = `cards/${runId}/${candidate.imageFileName}`;
+  const url = `${base}/${imagePath}`;
+  return [
+    `![カード ${index + 1}](${url})`,
+    `[カード画像を開く](${url})`,
+  ];
+};
+
 const buildCompactBody = (metadata: IssueMetadata): string => {
   const header = ['# AutoPost 候補', 'コメントで `approve: 1,3` のように番号を指定してください。'];
   const sections = metadata.candidates.map((candidate, index) => {
@@ -41,6 +68,7 @@ const buildCompactBody = (metadata: IssueMetadata): string => {
       candidate.articleTitle,
       `[記事リンク](${candidate.url})`,
     ];
+    lines.push(...buildImageMarkdown(metadata, candidate, index));
     if (candidate.tweetId) {
       lines.push(`投稿URL: https://x.com/i/web/status/${candidate.tweetId}`);
     }

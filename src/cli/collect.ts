@@ -21,6 +21,7 @@ const main = async () => {
   const config = await loadConfig();
   const postedLog = await loadPostedLog();
   const postedHashes = new Set(postedLog.map((entry) => entry.urlHash));
+  const runId = process.env.GITHUB_RUN_ID ?? null;
 
   const feeds = await loadFeedSources();
   logger.info(`RSS ソース数: ${feeds.length}`);
@@ -66,6 +67,7 @@ const main = async () => {
         comment,
         imageBase64: card.base64,
         imageAlt: card.alt,
+        imageFileName: card.fileName,
         ogTitle: og?.title,
         status: 'proposed',
       });
@@ -85,6 +87,7 @@ const main = async () => {
     generatedAt: formatIso(new Date()),
     timezone: 'Asia/Tokyo',
     candidates,
+    runId,
   };
 
   const metadataPath = path.join(outDir, 'latest-metadata.json');
