@@ -41,47 +41,36 @@ const resolveBranch = (): string | null => {
   return null;
 };
 
-const buildImageMarkdown = (metadata: IssueMetadata, index: number): string[] => {
-  const runId = metadata.runId;
-  const ownerRepo = process.env.GITHUB_REPOSITORY;
+const buildIssueBody = (metadata: IssueMetadata): string => {
+  const server = process.env.GITHUB_SERVER_URL ?? 'https://github.com';
+  const repo = process.env.GITHUB_REPOSITORY ?? '';
   const branch = resolveBranch() ?? 'main';
-  if (!runId || !ownerRepo) {
-    return [];
-  }
-  const base = `https://raw.githubusercontent.com/${ownerRepo}/${branch}`;
-  const fileName = `${index + 1}.png`;
-  const imagePath = `cards/${runId}/${fileName}`;
-  const url = `${base}/${imagePath}`;
-  return [
-    `![カード ${index + 1}](${url})`,
-    `[カード画像を開く](${url})`,
-  ];
-};
+  const runId = metadata.runId ?? process.env.GITHUB_RUN_ID ?? 'local';
 
-const buildCompactBody = (metadata: IssueMetadata): string => {
+  const imgUrl = (index: number) => `${server}/${repo}/blob/${branch}/cards/${runId}/${index}.png?raw=1`;
+
   const header = ['# AutoPost 候補', 'コメントで `approve: 1,3` のように番号を指定してください。'];
   const sections = metadata.candidates.map((candidate, index) => {
-    const lines = [
+    const headLines = [
       `## 候補 ${index + 1}`,
-      `媒体: ${candidate.feedTitle}`,
-      `カテゴリ: ${candidate.category}`,
-      `コメント: **${candidate.comment}**`,
+      `**${candidate.comment}**`,
       candidate.articleTitle,
+      `![カード ${index + 1}](${imgUrl(index + 1)})`,
       `[記事リンク](${candidate.url})`,
     ];
-    lines.push(...buildImageMarkdown(metadata, index));
-    if (candidate.tweetId) {
-      lines.push(`投稿URL: https://x.com/i/web/status/${candidate.tweetId}`);
-    }
-    if (candidate.rejectionReason) {
-      lines.push(`SKIP理由: ${candidate.rejectionReason}`);
-    }
-    return lines.join('\n');
+
+    const { imageBase64: _unused, ...safeMeta } = candidate as typeof candidate & { imageBase64?: string };
+    const metaBlock = `<details><summary>メタ情報</summary>\n\n\`\`\`json\n${JSON.stringify(safeMeta, null, 2)}\n\`\`\`\n\n</details>`;
+
+    return [headLines.join('\n'), metaBlock].join('\n\n');
   });
-  return [...header, ...sections, `<!-- ${METADATA_TAG}\n${JSON.stringify(metadata)}\n-->`].join('\n\n');
+
+  const metadataCopy = { ...metadata, candidates: metadata.candidates.map(({ imageBase64: _unused, ...rest }) => rest) };
+  const footer = `<!-- ${METADATA_TAG}\n${JSON.stringify(metadataCopy)}\n-->`;
+  return [...header, ...sections, footer].join('\n\n');
 };
 
-export const renderIssueBody = (metadata: IssueMetadata): string => buildCompactBody(metadata);
+export const renderIssueBody = (metadata: IssueMetadata): string => buildIssueBody(metadata);
 
 export const extractMetadataFromBody = (body?: string | null): IssueMetadata | null => {
   if (!body) {
