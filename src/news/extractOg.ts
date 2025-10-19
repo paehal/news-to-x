@@ -58,9 +58,9 @@ export const resolvePublisherImage = async (
   articleUrl: string,
   rawImageUrl: string | null | undefined,
   license: ImageLicenseConfig,
-): Promise<PublisherImageResult | null> => {
+): Promise<PublisherImageResult> => {
   if (!rawImageUrl) {
-    return null;
+    throw new Error('og-image-missing');
   }
 
   let resolvedUrl: string;
@@ -68,7 +68,7 @@ export const resolvePublisherImage = async (
     resolvedUrl = new URL(rawImageUrl, articleUrl).href;
   } catch (error) {
     logger.warn('OG 画像 URL の解決に失敗しました', error);
-    return null;
+    throw new Error('og-url-invalid');
   }
 
   let host: string;
@@ -76,7 +76,7 @@ export const resolvePublisherImage = async (
     host = new URL(resolvedUrl).hostname;
   } catch (error) {
     logger.warn('OG 画像のホスト判定に失敗しました', error);
-    return null;
+    throw new Error('og-host-invalid');
   }
 
   const allowed =
@@ -85,7 +85,7 @@ export const resolvePublisherImage = async (
 
   if (!allowed || blocked) {
     logger.info(`OG 画像の利用をスキップしました（ドメイン制約）: ${resolvedUrl}`);
-    return null;
+    throw new Error('og-domain-not-allowed');
   }
 
   let response;
@@ -99,18 +99,18 @@ export const resolvePublisherImage = async (
     });
   } catch (error) {
     logger.warn('OG 画像のダウンロードに失敗しました', error);
-    return null;
+    throw new Error('og-download-failed');
   }
 
   if (!response.ok) {
     logger.warn(`OG 画像の取得に失敗しました (${response.status})`);
-    return null;
+    throw new Error(`og-http-${response.status}`);
   }
 
   const contentType = response.headers.get('content-type') ?? '';
   if (contentType && !contentType.startsWith('image/')) {
     logger.warn(`コンテンツタイプが画像ではありません (${contentType})`);
-    return null;
+    throw new Error('og-content-type');
   }
 
   let buffer: Buffer;
@@ -118,12 +118,12 @@ export const resolvePublisherImage = async (
     buffer = Buffer.from(await response.arrayBuffer());
   } catch (error) {
     logger.warn('OG 画像のバッファ化に失敗しました', error);
-    return null;
+    throw new Error('og-buffer-error');
   }
 
   if (buffer.length < 1024) {
     logger.warn('OG 画像が小さすぎるためスキップします');
-    return null;
+    throw new Error('og-file-too-small');
   }
 
   try {
@@ -132,11 +132,11 @@ export const resolvePublisherImage = async (
     const height = metadata.height ?? 0;
     if (width < license.minSize.width || height < license.minSize.height) {
       logger.info(`OG 画像のサイズが閾値未満のためスキップします (${width}x${height})`);
-      return null;
+      throw new Error('og-too-small');
     }
     return { url: resolvedUrl, buffer, width, height };
   } catch (error) {
     logger.warn('OG 画像メタデータの解析に失敗しました', error);
-    return null;
+    throw new Error('og-metadata-error');
   }
 };

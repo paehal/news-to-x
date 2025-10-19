@@ -10,7 +10,7 @@ import { ensureNewsProposalLabel } from '../gh/labels.js';
 import { createProposalIssue, updateProposalIssue, renderIssueBody, formatIssueTitle } from '../gh/issue.js';
 import { loadPostedLog } from '../gh/git.js';
 import { containsBlockedWord } from '../utils/text.js';
-import { CandidateMetadata, IssueMetadata } from '../types.js';
+import { CandidateMetadata, ImageFailure, IssueMetadata } from '../types.js';
 
 const logger = createLogger('collect');
 
@@ -37,6 +37,7 @@ const main = async () => {
   await fs.mkdir(outDir, { recursive: true });
 
   const candidates: CandidateMetadata[] = [];
+  const imageFailures: ImageFailure[] = [];
   for (const article of articles) {
     const blocked = containsBlockedWord(`${article.title} ${article.contentSnippet ?? ''}`, config.filters.blockWords);
     if (blocked) {
@@ -48,28 +49,35 @@ const main = async () => {
       const og = await extractOgMetadata(article.link);
       const comment = await generateComment(article, config, og?.title);
 
-      const publisherImage = await resolvePublisherImage(
-        article.link,
-        og?.image ?? null,
-        config.image.license,
-      ).catch((error) => {
-        logger.warn('OG 画像の解析に失敗したためフォールバックします', error);
-        return null;
-      });
+      if (config.image.mode === 'publisher_overlay') {
+        if (!og?.image) {
+          imageFailures.push({
+            feedTitle: article.feedTitle,
+            articleTitle: article.title,
+            url: article.link,
+            reason: 'og-image-missing',
+          });
+          logger.warn(`OG 画像が取得できなかったため候補をスキップします: ${article.title}`);
+          continue;
+        }
 
-      let card = await generateSafeCard({
-        index: candidates.length + 1,
-        articleTitle: article.title,
-        publisher: article.feedTitle,
-        comment,
-        link: article.link,
-        outputDir: outDir,
-        config,
-      });
-
-      if (config.image.mode === 'publisher_overlay' && publisherImage) {
+        let publisherImage = null;
         try {
-          card = await makePublisherOverlayCard({
+          publisherImage = await resolvePublisherImage(article.link, og.image, config.image.license);
+        } catch (error) {
+          const reason = (error as Error)?.message ?? 'resolve-failed';
+          imageFailures.push({
+            feedTitle: article.feedTitle,
+            articleTitle: article.title,
+            url: article.link,
+            reason,
+          });
+          logger.warn(`OG 画像の利用ができませんでした (${reason}): ${article.title}`);
+          continue;
+        }
+
+        try {
+          const card = await makePublisherOverlayCard({
             index: candidates.length + 1,
             comment,
             articleTitle: article.title,
@@ -81,10 +89,43 @@ const main = async () => {
             overlay: config.image.overlay,
             imageBuffer: publisherImage.buffer,
           });
+
+          candidates.push({
+            id: candidates.length + 1,
+            feedTitle: article.feedTitle,
+            articleTitle: article.title,
+            url: article.link,
+            category: article.category,
+            comment,
+            imageBase64: card.base64,
+            imageAlt: card.alt,
+            imageFileName: card.fileName,
+            ogTitle: og?.title,
+            status: 'proposed',
+          });
+          logger.info(`候補 ${candidates.length} を追加: ${article.title}`);
         } catch (error) {
-          logger.warn('publisher overlay failed, fallback to safe card', error);
-        }
+        const msg = (error as Error)?.message ?? 'overlay-failed';
+        imageFailures.push({
+          feedTitle: article.feedTitle,
+          articleTitle: article.title,
+          url: article.link,
+          reason: `overlay-failed:${msg}`,
+        });
+        logger.error(`publisher overlay failed: ${article.title}`, error);
       }
+      continue;
+      }
+
+      const safeCard = await generateSafeCard({
+        index: candidates.length + 1,
+        articleTitle: article.title,
+        publisher: article.feedTitle,
+        comment,
+        link: article.link,
+        outputDir: outDir,
+        config,
+      });
 
       candidates.push({
         id: candidates.length + 1,
@@ -93,9 +134,9 @@ const main = async () => {
         url: article.link,
         category: article.category,
         comment,
-        imageBase64: card.base64,
-        imageAlt: card.alt,
-        imageFileName: card.fileName,
+        imageBase64: safeCard.base64,
+        imageAlt: safeCard.alt,
+        imageFileName: safeCard.fileName,
         ogTitle: og?.title,
         status: 'proposed',
       });
@@ -116,6 +157,7 @@ const main = async () => {
     timezone: 'Asia/Tokyo',
     candidates,
     runId,
+    imageFailures: imageFailures.length ? imageFailures : undefined,
   };
 
   const metadataPath = path.join(outDir, 'latest-metadata.json');

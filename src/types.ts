@@ -49,6 +49,7 @@ export interface IssueMetadata {
   timezone: string;
   candidates: CandidateMetadata[];
   runId?: string | null;
+  imageFailures?: ImageFailure[];
 }
 
 export interface PostedEntry {
@@ -104,6 +105,13 @@ export interface AppConfig {
   comment: CommentConfig;
   image: ImageConfig;
   filters: FilterConfig;
+}
+
+export interface ImageFailure {
+  feedTitle: string;
+  articleTitle: string;
+  url: string;
+  reason: string;
 }
 
 export interface GeneratedCard {

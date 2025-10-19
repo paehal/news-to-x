@@ -66,9 +66,20 @@ const buildIssueBody = (metadata: IssueMetadata): string => {
     return [headLines.join('\n'), metaBlock].join('\n\n');
   });
 
+  const failureSection = (metadata.imageFailures?.length ?? 0) > 0
+    ? [
+        '---',
+        '### 画像取得に失敗した候補',
+        ...metadata.imageFailures!.map(
+          (failure, idx) =>
+            `${idx + 1}. ${failure.feedTitle}｜${failure.articleTitle}\n   - 理由: ${failure.reason}\n   - [記事リンク](${failure.url})`,
+        ),
+      ]
+    : [];
+
   const metadataCopy = { ...metadata, candidates: metadata.candidates.map(({ imageBase64: _unused, ...rest }) => rest) };
   const footer = `<!-- ${METADATA_TAG}\n${JSON.stringify(metadataCopy)}\n-->`;
-  return [...header, ...sections, footer].join('\n\n');
+  return [...header, ...sections, ...failureSection, footer].join('\n\n');
 };
 
 export const renderIssueBody = (metadata: IssueMetadata): string => buildIssueBody(metadata);

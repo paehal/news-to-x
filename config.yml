@@ -1,7 +1,7 @@
 maxCandidates: 5
 maxPerCategory: 2
 comment:
-  maxChars: 100
+  maxChars: 500
 image:
   mode: publisher_overlay
   width: 1200
