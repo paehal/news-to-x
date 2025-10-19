@@ -1,0 +1,13 @@
+[
+  {"title":"Yahoo! トップ","url":"https://news.yahoo.co.jp/rss/topics/top-picks.xml"},
+  {"title":"Yahoo! 国内","url":"https://news.yahoo.co.jp/rss/topics/domestic.xml"},
+  {"title":"Yahoo! 国際","url":"https://news.yahoo.co.jp/rss/topics/world.xml"},
+  {"title":"Yahoo! 経済","url":"https://news.yahoo.co.jp/rss/topics/business.xml"},
+  {"title":"Yahoo! エンタメ","url":"https://news.yahoo.co.jp/rss/topics/entertainment.xml"},
+  {"title":"Yahoo! スポーツ","url":"https://news.yahoo.co.jp/rss/topics/sports.xml"},
+  {"title":"Yahoo! 科学","url":"https://news.yahoo.co.jp/rss/topics/science.xml"},
+  {"title":"Yahoo! 地域","url":"https://news.yahoo.co.jp/rss/topics/local.xml"},
+  {"title":"NHKニュース総合","url":"https://www3.nhk.or.jp/rss/news/cat0.xml"},
+  {"title":"BBCニュース（日本語）","url":"https://www.bbc.com/japanese/index.xml"},
+  {"title":"GIGAZINE","url":"https://gigazine.net/news/rss_2.0/"}
+]
